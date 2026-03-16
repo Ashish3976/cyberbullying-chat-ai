@@ -18,63 +18,16 @@ chatEndRef.current?.scrollIntoView({behavior:"smooth"});
 /* ABUSIVE WORD DATASET */
 
 const abusiveWords=[
-
 "idiot","stupid","dumb","loser","moron","hate",
-
 "yedava","vedhava","lanja",
-
 "bewakoof","pagal","chutiya"
-
 ];
 
 /* CYBERBULLYING DETECTION */
 
 const detectAbuse=(text)=>{
-
 const t=text.toLowerCase();
-
 return abusiveWords.some(word=>t.includes(word));
-
-};
-
-/* MINI AI ASSISTANT */
-
-const miniAI=(text)=>{
-
-const msg=text.toLowerCase();
-
-if(msg.includes("hello") || msg.includes("hi"))
-return "👋 Hello! I'm your AI assistant.";
-
-if(msg.includes("how are you"))
-return "😊 I'm doing great!";
-
-if(msg.includes("project"))
-return "📚 This is an AI Cyberbullying Detection Chat Application.";
-
-if(msg.includes("time"))
-return "⏰ Current time: "+new Date().toLocaleTimeString();
-
-if(msg.includes("date"))
-return "📅 Today is: "+new Date().toLocaleDateString();
-
-if(msg.includes("ai"))
-return "🧠 AI stands for Artificial Intelligence.";
-
-if(msg.includes("thank"))
-return "🙏 You're welcome!";
-
-const replies=[
-
-"🤖 Interesting message!",
-"💬 Tell me more.",
-"😊 That sounds cool!",
-"🚀 Nice conversation!"
-
-];
-
-return replies[Math.floor(Math.random()*replies.length)];
-
 };
 
 /* TRANSLATION */
@@ -84,136 +37,142 @@ const translateMessage=async(text,target)=>{
 try{
 
 const res=await fetch("https://libretranslate.de/translate",{
-
 method:"POST",
-
 headers:{
 "Content-Type":"application/json"
 },
-
 body:JSON.stringify({
 q:text,
 source:"auto",
 target:target,
 format:"text"
 })
-
 });
 
 const data=await res.json();
-
 return data.translatedText;
 
 }catch{
-
 return text;
-
 }
 
 };
 
 /* SEND MESSAGE */
 
-const send=async()=>{
+const send = async () => {
 
-if(blocked){
-
+if (blocked) {
 alert("🚫 You are blocked due to repeated abusive messages.");
 return;
-
 }
 
-if(msg.trim()==="") return;
+if (msg.trim() === "") return;
 
-const user=localStorage.getItem("user") || "User";
+const user = localStorage.getItem("user") || "User";
 
 /* TRANSLATE */
 
-const translated=await translateMessage(msg,language);
-const englishText=await translateMessage(msg,"en");
+const translated = await translateMessage(msg, language);
+const englishText = await translateMessage(msg, "en");
 
-let newMessages=[...messages];
+let newMessages = [...messages];
 
 /* USER MESSAGE */
 
 newMessages.push({
-
-user:user,
-text:msg,
-translated:translated
-
+user: user,
+text: msg,
+translated: translated
 });
 
 /* CYBERBULLYING DETECTION */
 
-if(detectAbuse(msg) || detectAbuse(englishText)){
+if (detectAbuse(msg) || detectAbuse(englishText)) {
 
-const newViolation=violations+1;
+const newViolation = violations + 1;
 setViolations(newViolation);
 
 newMessages.push({
-
-user:"AI Moderator",
-text:"⚠️ Warning: abusive language detected"
-
+user: "AI Moderator",
+text: "⚠️ Warning: abusive language detected"
 });
 
-if(newViolation>=3){
+if (newViolation >= 3) {
 
 setBlocked(true);
 
 newMessages.push({
-
-user:"AI Moderator",
-text:"🚫 You have been blocked after 3 violations"
-
+user: "AI Moderator",
+text: "🚫 You have been blocked after 3 violations"
 });
 
 }
 
-}else{
+setMessages(newMessages);
+setMsg("");
+return;
 
-/* AI TYPING MESSAGE */
+}
+
+/* ===== BACKEND AI CALL ===== */
 
 newMessages.push({
-
-user:"Mini AI",
-text:"Typing..."
-
+user: "AI",
+text: "Typing..."
 });
 
 setMessages(newMessages);
 
-/* SMALL DELAY */
+try {
 
-setTimeout(()=>{
+const res = await fetch(
+"https://cyberbullying-chat-ai.onrender.com/chat",
+{
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+message: msg
+})
+}
+);
 
-const reply=miniAI(msg);
+const data = await res.json();
 
-setMessages(prev=>{
+setMessages(prev => {
 
-let updated=[...prev];
+let updated = [...prev];
 updated.pop();
 
 updated.push({
-
-user:"Mini AI",
-text:reply
-
+user: "AI",
+text: data.reply
 });
 
 return updated;
 
 });
 
-},800);
+} catch {
 
-setMsg("");
-return;
+setMessages(prev => {
+
+let updated = [...prev];
+updated.pop();
+
+updated.push({
+user: "AI",
+text: "⚠️ Backend not responding"
+});
+
+return updated;
+
+});
 
 }
 
-setMessages(newMessages);
 setMsg("");
 
 };
@@ -229,13 +188,10 @@ return(
 <select
 value={language}
 onChange={(e)=>setLanguage(e.target.value)}
-
 >
-
 <option value="en">English</option>
 <option value="hi">Hindi</option>
 <option value="te">Telugu</option>
-
 </select>
 
 </div>
@@ -246,11 +202,10 @@ onChange={(e)=>setLanguage(e.target.value)}
 
 <div
 key={i}
-className={`message ${m.user==="Mini AI" || m.user==="AI Moderator" ? "bot" : "user"}`}
+className={`message ${m.user==="AI" || m.user==="AI Moderator" ? "bot" : "user"}`}
 >
 
-<b>{m.user}</b>
-{m.text}
+<b>{m.user}</b> {m.text}
 
 {m.translated && m.translated!==m.text && (
 
@@ -276,19 +231,16 @@ placeholder={blocked ? "Blocked" : "Type your message"}
 disabled={blocked}
 onChange={(e)=>setMsg(e.target.value)}
 onKeyDown={(e)=>{
-
 if(e.key==="Enter") send();
-
 }}
 />
 
 <button
 onClick={send}
 disabled={blocked}
-
 >
-
-Send </button>
+Send
+</button>
 
 </div>
 
