@@ -71,9 +71,9 @@ const res = await fetch(
 {
 method:"POST",
 headers:{ "Content-Type":"application/json" },
-body:JSON.stringify({
-username:user,
-message:msg
+body: JSON.stringify({
+username: user,
+message: msg
 })
 }
 );
