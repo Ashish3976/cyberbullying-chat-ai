@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import re
 
@@ -6,6 +7,15 @@ from ai_reply import ai_reply
 from abuse_detector import detect_abuse
 
 app = FastAPI()
+
+# ⭐ VERY IMPORTANT → CORS FIX
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # allow frontend (Vercel / localhost)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # store violation count
 violations = {}
@@ -51,6 +61,11 @@ def analyze_text(text):
         severity = "HIGH"
 
     return severity
+
+
+@app.get("/")
+def home():
+    return {"message": "Cyberbullying AI Backend Running 🚀"}
 
 
 @app.post("/chat")
